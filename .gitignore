@@ -1,0 +1,21 @@
+# Ignore the virtual environment folder
+myenv/
+
+# Ignore Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore Jupyter notebook checkpoints
+.ipynb_checkpoints/
+
+# Ignore environment variable files
+.env
+
+# Ignore datasets (optional, if you don't want to commit them)
+*.csv
+*.xlsx
+
+# Ignore VSCode settings (optional)
+.vscode/
