@@ -7,6 +7,7 @@ from sklearn.preprocessing import OneHotEncoder
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 import numpy as np
+from sklearn.model_selection  import GridSearchCV
 import joblib
 
 # Load data
@@ -40,6 +41,7 @@ df['KM_per_Year'] = df['KM driven'] / df['Car_Age']  # Calculate KM per Year
 # Drop the 'Manufacturing Year' column as we now have 'Car Age'
 df.drop(columns=["Manufacturing_year"], inplace=True)
 
+
 # Feature columns and target
 X = df[[
     "Engine capacity", "Spare key", "Transmission", "KM driven", 
@@ -64,8 +66,15 @@ preprocessor = ColumnTransformer([
 model = Pipeline(steps=[
     ("bin_imperfections", ImperfectionBinner()),
     ("preprocessor", preprocessor),
-    ("regressor", RandomForestRegressor(random_state=42))
+   ("regressor", RandomForestRegressor(
+    n_estimators=200,
+    max_depth=10,
+    min_samples_split=10,
+    random_state=42
+))
+
 ])
+
 
 # Train/test split
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -73,26 +82,16 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 # Train model
 model.fit(X_train, y_train)
 
-y_pred = model.predict(X_test)
-
-# Calculate R-squared (R²)
-r2 = r2_score(y_test, y_pred)
-print(f"R² Score: {r2:.4f}")
-
-# Calculate Mean Absolute Error (MAE)
-mae = mean_absolute_error(y_test, y_pred)
-print(f"Mean Absolute Error (MAE): {mae:.4f}")
-
-# Calculate Mean Squared Error (MSE)
-mse = mean_squared_error(y_test, y_pred)
-print(f"Mean Squared Error (MSE): {mse:.4f}")
-
-# Calculate Root Mean Squared Error (RMSE)
-rmse = np.sqrt(mse)
-print(f"Root Mean Squared Error (RMSE): {rmse:.4f}")
+# Initial results 
 # R² Score: 0.8292
 # Mean Absolute Error (MAE): 53962.1107
 # Mean Squared Error (MSE): 5691486187.1972
 # Root Mean Squared Error (RMSE): 75441.9392
+
+# # Check 2 
+# R² Score: 0.8345
+# Mean Absolute Error (MAE): 54008.6417
+# Mean Squared Error (MSE): 5514299203.9640
+# Root Mean Squared Error (RMSE): 74258.3275
 # Save model
 joblib.dump(model, "model.pkl")
