@@ -4,39 +4,95 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder
+from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+import numpy as np
 import joblib
 
 # Load data
 df = pd.read_csv("cars24data.csv")
 
+# Custom transformer to bin imperfections
+class ImperfectionBinner(BaseEstimator, TransformerMixin):
+    def fit(self, X, y=None):
+        return self
+    def transform(self, X):
+        X = X.copy()
+        def bin_imperfections(val):
+            if val == 0:
+                return "None"
+            elif val <= 5:
+                return "Low"
+            elif val <= 15:
+                return "Medium"
+            else:
+                return "High"
+        X["Imperfection_Level"] = X["Imperfections"].apply(bin_imperfections)
+        return X.drop("Imperfections", axis=1)
+    
+
+# Feature Engineering: Create Car Age and KM per Year
+current_year = 2025  # You can dynamically get the current year if needed
+df['Car_Age'] = current_year - df['Manufacturing_year']  # Calculate Car Age
+df['KM_per_Year'] = df['KM driven'] / df['Car_Age']  # Calculate KM per Year
+
+
+# Drop the 'Manufacturing Year' column as we now have 'Car Age'
+df.drop(columns=["Manufacturing_year"], inplace=True)
+
 # Feature columns and target
 X = df[[
-    "Manufacturing_year", "Engine capacity", "Spare key",
-    "Transmission", "KM driven", "Ownership", "Fuel type",
-    "Imperfections", "Repainted Parts"
+    "Engine capacity", "Spare key", "Transmission", "KM driven", 
+    "Ownership", "Fuel type", "Imperfections", "Repainted Parts", 
+    "Car_Age", "KM_per_Year"
 ]]
 y = df["Price"]
 
-# Preprocessing
-categorical_features = ["Spare key", "Transmission", "Fuel type"]
+# Updated feature list (after binning)
+categorical_features = ["Spare key", "Transmission", "Fuel type", "Imperfection_Level"]
 numerical_features = [
     "Manufacturing_year", "Engine capacity", "KM driven",
-    "Ownership", "Imperfections", "Repainted Parts"
+    "Ownership", "Repainted Parts"
 ]
 
+# Preprocessor
 preprocessor = ColumnTransformer([
     ("cat", OneHotEncoder(handle_unknown='ignore'), categorical_features)
 ], remainder='passthrough')
 
-# Create pipeline
+# Final pipeline
 model = Pipeline(steps=[
+    ("bin_imperfections", ImperfectionBinner()),
     ("preprocessor", preprocessor),
     ("regressor", RandomForestRegressor(random_state=42))
 ])
 
-# Train
+# Train/test split
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Train model
 model.fit(X_train, y_train)
 
+y_pred = model.predict(X_test)
+
+# Calculate R-squared (R²)
+r2 = r2_score(y_test, y_pred)
+print(f"R² Score: {r2:.4f}")
+
+# Calculate Mean Absolute Error (MAE)
+mae = mean_absolute_error(y_test, y_pred)
+print(f"Mean Absolute Error (MAE): {mae:.4f}")
+
+# Calculate Mean Squared Error (MSE)
+mse = mean_squared_error(y_test, y_pred)
+print(f"Mean Squared Error (MSE): {mse:.4f}")
+
+# Calculate Root Mean Squared Error (RMSE)
+rmse = np.sqrt(mse)
+print(f"Root Mean Squared Error (RMSE): {rmse:.4f}")
+# R² Score: 0.8292
+# Mean Absolute Error (MAE): 53962.1107
+# Mean Squared Error (MSE): 5691486187.1972
+# Root Mean Squared Error (RMSE): 75441.9392
 # Save model
 joblib.dump(model, "model.pkl")
