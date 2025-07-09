@@ -14,7 +14,7 @@ __pycache__/
 .env
 
 # Ignore datasets (optional, if you don't want to commit them)
-*.csv
+
 *.xlsx
 
 # Ignore VSCode settings (optional)
