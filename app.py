@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import joblib
-
+from train_model import ImperfectionBinner
 # Load the model
 model = joblib.load("model.pkl")
 
@@ -14,6 +14,7 @@ spare_key = st.selectbox("Spare Key", ["Yes", "No"])
 transmission = st.selectbox("Transmission", ["Manual", "Automatic"])
 km = st.number_input("KM Driven", min_value=0)
 owners = st.selectbox("Number of Owners", [1, 2, 3])
+
 fuel = st.selectbox("Fuel Type", ["Petrol", "Diesel", "CNG"])
 imperfections = st.slider("Imperfections (0 = None, 10 = Worst)", 0, 10)
 repainted = st.slider("Repainted Parts (0 = None, 10 = All)", 0, 10)
